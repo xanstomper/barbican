@@ -18,7 +18,7 @@ protects the one holding the gun. It synthesizes the opsec posture for each
 engagement the way KAIRO synthesizes attacks: audit the exposure, classify the
 risks, compile the protection plan, enforce it at engagement start **and end**.
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blueviolet?style=for-the-badge)](#the-cli)
+[![Version](https://img.shields.io/badge/version-1.2.0-blueviolet?style=for-the-badge)](#the-cli)
 [![Python](https://img.shields.io/badge/python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](#quickstart)
 [![Platform](https://img.shields.io/badge/platform-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](#quickstart)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=for-the-badge)](#why-its-powerful)
@@ -106,7 +106,18 @@ barbican wipe --target t --confirm                       # engagement-end cleanu
   identifying the operator is its job, not its input.
 - **Sanitize is a compiler pass, not a tip.** Operator strings (username, hostname,
   git identity) are rewritten to the engagement alias across every family artifact
-  — dry-run by default, `--write` applies.
+  — dry-run by default, `--write` applies. `leakscan` is the OTHER direction: an
+  11-pattern battery (git-author pairs, emails, AKIA/sk-/ghp_/xox keys, PEM blocks,
+  home paths, hostnames, agent-env markers) over the artifacts, severity-ranked
+  with redacted snippets — HIGH hits must be zero before an assault fires.
+- **The tempo is computed, not guessed.** `timeline` chunks any request count into
+  bursts of ≤25 with the pause schedule and wall-clock printed before anything fires.
+- **The trail is an upstream map.** `trail` records every provider the engagement
+  touches; personal-account use flags HIGH in the row — and `check --target` shows
+  the whole shield (vantage · identity · compartment · trail · alias) in five lines.
+- **Aliases are derived, not invented.** `alias` computes a deterministic
+  `ghost-xxxxxx` per target+epoch, rotates per engagement window, and the posture's
+  human alias always wins.
 - **One compartment.** All family state lives under `~/.redteam/` — nothing
   family-related in cloud-synced or shared paths.
 - **Zero dependencies.** Pure Python stdlib. Clone and run.
@@ -126,7 +137,11 @@ python3 barbican/scripts/barbican.py check     # your exposure, one line per lay
 | `assess --target T` | live exposure audit: vantage, identity, artifact leaks, env markers, compartment → ranked risks |
 | `posture --target T --vantage vm\|vps\|vpn\|lab --alias A` | synthesize + store the engagement posture (required before the family runs) |
 | `sanitize --target T [--write]` | strip operator-identifying strings from all family artifacts (dry-run default) |
-| `check` | fast pre-flight: vantage + identity + compartment, one line each |
+| `leakscan --target T [--deep]` | the operator-string battery: identity/secrets/paths/hostnames, severity-ranked, redacted snippets |
+| `timeline --target T --burst N [--pause S]` | the noise-budget pacing planner — burst schedule + wall-clock before anything fires |
+| `trail --target T [--add "provider :: purpose"]` | the provider trail ledger — personal-account use flags HIGH |
+| `alias --target T [--rotate]` | engagement alias derivation (deterministic) + per-engagement rotation |
+| `check [--target T]` | fast pre-flight: vantage + identity + compartment (+ trail/alias) |
 | `vantage check\|vm\|vpn [--target T] [--name X]` | exit verification + VM/VPN inventory + **the hard gate** |
 | `wipe --target T --confirm` | engagement-end cleanup: campaign dir + sim rows (canon survives) |
 | `verify` | self-check |

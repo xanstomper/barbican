@@ -1,7 +1,7 @@
 ---
 name: barbican
 description: "Trigger `barbican`. THE FIRST LAYER — synthesizes the operator's protection: vantage, identity, artifacts, trail, timeline, cleanup. Runs before every engagement."
-version: 1.1.0
+version: 1.2.0
 author: Hermes Agent
 license: MIT
 platforms: [linux]
@@ -100,8 +100,12 @@ never asks for the operator's real identity — identifying it is its JOB.
 - `assess --target <t>` — live exposure audit: default-route vantage, git identity, hostname leaks in family artifacts, env markers, compartment check → ranked risks
 - `posture --target <t> --vantage vm|vps|vpn|lab --alias <engagement-alias>` — synthesize + store the engagement posture (required before the family runs; prints the gate)
 - `sanitize --target <t> [--write]` — strip operator-identifying strings (username, hostname, git identity) from ALL family artifacts in the campaign + canon (dry-run default; --write applies with the alias from posture)
-- `check` — fast pre-flight: vantage + identity + compartment in one line each
+- `check [--target <t>]` — fast pre-flight: vantage + identity + compartment (+ trail/alias lines with a posture)
 - `wipe --target <t> --confirm` — engagement-end cleanup: campaign dir + sim rows (canon survives)
+- `leakscan --target <t> [--deep]` — the operator-string battery over family artifacts: identity/secret/path/hostname classes, severity-ranked, REDACTED snippets; `--deep` sweeps the whole ~/.redteam canon
+- `timeline --target <t> --burst N [--pause S]` — the noise-budget pacing planner: burst chunking + pause schedule + wall-clock, before anything fires
+- `trail --target <t> [--add "provider :: purpose"]` — the provider trail ledger; personal-account use flags HIGH
+- `alias --target <t> [--rotate]` — engagement alias derivation (deterministic per target+epoch) + rotation
 - `vantage check|vm|vpn [--target T] [--name X]` — exit verification + VM/VPN inventory/launch + hard gate
 - `verify` — self-check
 

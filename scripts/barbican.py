@@ -8,12 +8,18 @@ Commands:
                                         synthesize + store the engagement posture
   sanitize --target <t> [--write]       strip operator-identifying strings from
                                         family artifacts (dry-run default)
-  check                                  fast pre-flight (vantage/identity/compartment)
+  leakscan --target <t> [--deep]        regex battery: operator strings in artifacts
+  timeline --target <t> --burst N [--pause S]
+                                        noise-budget pacing planner (burst schedule)
+  trail    --target <t> [--add "provider :: purpose"]
+                                        provider trail ledger + personal-account flags
+  alias    --target <t> [--rotate]      engagement alias derivation/rotation
+  check    [--target <t>]               fast pre-flight (vantage/identity/compartment)
   wipe     --target <t> --confirm       engagement-end cleanup (canon survives)
   verify                                self-check
 
 State: ~/.redteam/opsec/<target>/posture.json
-Exit codes: 0 ok · 2 usage/state error.
+Exit codes: 0 ok · 1 verify failure · 2 usage/state error.
 """
 import argparse
 import json
@@ -206,6 +212,15 @@ def cmd_check(args):
     print(f"▸ compartment: ~/.redteam exists={compartment}")
     if email and "noreply" not in email:
         print("  ! personal email in git identity — see assess")
+    if args.target:
+        st = load_posture(args.target)
+        trail = (st or {}).get("trail", [])
+        hi = sum(1 for t in trail if "personal" in str(t.get("purpose", "")).lower())
+        if trail:
+            print(f"▸ trail:      {len(trail)} provider row(s)" + (f" · {hi} PERSONAL-USE flag(s)" if hi else " · clean"))
+        epoch = (st or {}).get("epoch", 0)
+        print(f"▸ alias:      {(st or {}).get('alias') or _derive_alias(args.target, epoch)}"
+              + (f" (epoch {epoch})" if epoch else ""))
     return 0
 
 
@@ -228,6 +243,140 @@ def cmd_wipe(args):
     return 0
 
 
+# ── v1.2.0 the shield deepens: leakscan · timeline · trail · alias ────────────
+
+import hashlib
+import math
+
+LEAK_BATTERY = [
+    ("git-author",   r"[A-Za-z .'-]{2,40} <[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+>", "HIGH", "identity"),
+    ("email",        r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "HIGH", "identity"),
+    ("aws-key",      r"\bAKIA[0-9A-Z]{16}\b", "HIGH", "secret"),
+    ("generic-key",  r"\bsk-[A-Za-z0-9_-]{20,}\b", "HIGH", "secret"),
+    ("github-token", r"\bgh[pousr]_[A-Za-z0-9]{20,}\b", "HIGH", "secret"),
+    ("slack-token",  r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b", "HIGH", "secret"),
+    ("pem",          r"-----BEGIN [A-Z ]+", "HIGH", "secret"),
+    ("home-path",    r"/home/[a-zA-Z0-9_.-]+", "MEDIUM", "path"),
+    ("hostname",     r"\b[a-zA-Z0-9-]+\.local\b|\b[a-zA-Z0-9-]+\.tail[a-z0-9-]*\.ts\.net\b", "MEDIUM", "identity"),
+    ("agent-env",    r"\b(?:AI|AGENT)_[A-Z_]{2,}\b", "MEDIUM", "tooling"),
+    ("private-ip",   r"\b(?:10|172\.(?:1[6-9]|2[0-9]|3[01])|192\.168)\.\d{1,3}\.\d{1,3}\b", "LOW", "infra"),
+]
+SEV_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+
+
+def _scope_files(args):
+    if args.deep:
+        base = Path.home() / ".redteam"
+        return [p for p in base.rglob("*") if p.is_file()] if base.exists() else []
+    files = []
+    for d in (OPSEC_DIR / args.target, CAMP_DIR / args.target):
+        if d.exists():
+            files += [p for p in d.rglob("*") if p.is_file()]
+    return files
+
+
+def _redact(s):
+    if len(s) <= 14:
+        return "*" * max(len(s) - 2, 1) + s[-1]
+    return s[:8] + "…" + "*" * max(len(s) - 14, 2) + s[-4:]
+
+
+def cmd_leakscan(args):
+    files = _scope_files(args)
+    hits = []
+    for f in files:
+        try:
+            if f.stat().st_size > 2_000_000:
+                continue
+            text = f.read_text(errors="replace")
+        except Exception:
+            continue
+        for name, pat, sev, cls in LEAK_BATTERY:
+            for m in re.finditer(pat, text):
+                line = text.count("\n", 0, m.start()) + 1
+                hits.append((sev, cls, name, str(f), line, _redact(m.group(0))))
+    hits.sort(key=lambda h: SEV_ORDER[h[0]])
+    scope = "~/.redteam (deep)" if args.deep else f"opsec/{args.target} + campaigns/{args.target}"
+    print(f"═══ BARBICAN LEAKSCAN — {scope} · {len(files)} file(s) · {len(hits)} hit(s) ═══")
+    counts = {}
+    for h in hits:
+        counts[h[0]] = counts.get(h[0], 0) + 1
+    for sev in ("HIGH", "MEDIUM", "LOW"):
+        if counts.get(sev):
+            print(f"  {sev}: {counts[sev]}")
+    for sev, cls, name, f, line, snip in hits[:40]:
+        print(f"  [{sev:6s}] {name:12s} {f}:{line}  {snip}")
+    if len(hits) > 40:
+        print(f"  … {len(hits) - 40} more")
+    if counts.get("HIGH"):
+        print("  → HIGH hits are identity/secret leaks: sanitize --write + re-posture, then wipe the campaign")
+    return 0
+
+
+def cmd_timeline(args):
+    per = 25
+    n_bursts = math.ceil(args.burst / per)
+    intra = args.pause
+    print(f"═══ BARBICAN TIMELINE — {args.burst} request(s) in bursts of ≤{per} "
+          f"(intra {intra}s · inter 1s) ═══")
+    print(f"  {'burst':>5} {'requests':>8} {'offset':>8} {'cumulative':>10}")
+    offset, cum = 0, 0.0
+    for b in range(1, n_bursts + 1):
+        count = min(per, args.burst - offset)
+        print(f"  {b:>5} {count:>8} {offset:>8} {cum:>9.1f}s")
+        cum += count * intra + (1.0 if b < n_bursts else 0.0)
+        offset += count
+    print(f"  total wall-clock ≈ {cum:.1f}s ({cum / 60:.1f} min) · "
+          f"pacing avoids the operator's routine hours (posture holds the window)")
+    return 0
+
+
+def cmd_trail(args):
+    st = load_posture(args.target) or {
+        "target": args.target, "created": datetime.now(timezone.utc).isoformat()}
+    trail = st.setdefault("trail", [])
+    if args.add:
+        if " :: " not in args.add:
+            print('✗ format: "provider :: purpose"', file=sys.stderr)
+            return 2
+        provider, purpose = (p.strip() for p in args.add.split(" :: ", 1))
+        row = {"provider": provider, "purpose": purpose,
+               "at": datetime.now(timezone.utc).isoformat()}
+        if not any(t.get("provider") == provider and t.get("purpose") == purpose
+                   for t in trail):
+            trail.append(row)
+            save_posture(args.target, st)
+    if not trail:
+        print("· trail empty — add rows: trail --target <t> --add \"provider :: purpose\"")
+        return 0
+    print(f"═══ BARBICAN TRAIL — {args.target} ({len(trail)} row(s)) ═══")
+    for t in trail:
+        flag = "  [HIGH: personal use]" if "personal" in str(t.get("purpose", "")).lower() else ""
+        print(f"  {t.get('provider', '?'):20s} {t.get('purpose', '')[:60]}{flag}")
+    print("  rule: engagement traffic uses sanctioned providers only — never personal accounts")
+    return 0
+
+
+def _derive_alias(target, epoch):
+    h = hashlib.sha256(f"{target}#{epoch}".encode()).hexdigest()[:6]
+    return f"ghost-{h}"
+
+
+def cmd_alias(args):
+    st = load_posture(args.target) or {
+        "target": args.target, "epoch": 0, "created": datetime.now(timezone.utc).isoformat()}
+    st.setdefault("epoch", 0)
+    if args.rotate:
+        st["epoch"] += 1
+    alias = _derive_alias(args.target, st["epoch"])
+    save_posture(args.target, st)
+    print(f"▸ engagement alias for '{args.target}': {alias} (epoch {st['epoch']})")
+    if (st or {}).get("alias") and st["alias"] != alias:
+        print(f"  posture override active: '{st['alias']}' — the human alias wins")
+    print("  rule: artifacts carry the alias, never the operator identity · rotate per engagement")
+    return 0
+
+
 def cmd_verify(args):
     bad = []
     self = Path(__file__).resolve()
@@ -236,7 +385,8 @@ def cmd_verify(args):
         bad.append("compile")
     help_out = subprocess.run([sys.executable, str(self), "--help"],
                               capture_output=True, text=True).stdout
-    for want in ("assess", "posture", "sanitize", "check", "wipe", "verify", "vantage"):
+    for want in ("assess", "posture", "sanitize", "check", "wipe", "verify", "vantage",
+                 "leakscan", "timeline", "trail", "alias"):
         if want not in help_out:
             bad.append(f"subcommand {want}")
     if bad:
@@ -375,10 +525,24 @@ def main():
     s.add_argument("--target", required=True)
     s.add_argument("--write", action="store_true")
     c = sub.add_parser("check", help="fast pre-flight")
+    c.add_argument("--target", help="adds trail/alias lines when a posture exists")
     w = sub.add_parser("wipe", help="engagement-end cleanup")
     w.add_argument("--target", required=True)
     w.add_argument("--confirm", action="store_true")
     vf = sub.add_parser("verify", help="self-check")
+    ls = sub.add_parser("leakscan", help="operator-string battery over family artifacts")
+    ls.add_argument("--target", required=True)
+    ls.add_argument("--deep", action="store_true", help="scan the whole ~/.redteam canon")
+    tl = sub.add_parser("timeline", help="noise-budget pacing planner")
+    tl.add_argument("--target", required=True)
+    tl.add_argument("--burst", type=int, required=True, help="total request count")
+    tl.add_argument("--pause", type=float, default=0.2, help="intra-burst gap seconds")
+    tr = sub.add_parser("trail", help="provider trail ledger + personal-use flags")
+    tr.add_argument("--target", required=True)
+    tr.add_argument("--add", help='"provider :: purpose"')
+    al = sub.add_parser("alias", help="engagement alias derivation/rotation")
+    al.add_argument("--target", required=True)
+    al.add_argument("--rotate", action="store_true")
     vt = sub.add_parser("vantage", help="exit verification: IP echo · VMs · VPNs · gate check")
     vt.add_argument("action", choices=["check", "vm", "vpn"])
     vt.add_argument("--target", help="enforce this posture's gate")
@@ -398,6 +562,14 @@ def main():
         return cmd_verify(a2)
     if a2.cmd == "vantage":
         return cmd_vantage(a2)
+    if a2.cmd == "leakscan":
+        return cmd_leakscan(a2)
+    if a2.cmd == "timeline":
+        return cmd_timeline(a2)
+    if a2.cmd == "trail":
+        return cmd_trail(a2)
+    if a2.cmd == "alias":
+        return cmd_alias(a2)
     return 2
 
 

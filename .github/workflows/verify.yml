@@ -29,6 +29,16 @@ jobs:
           python3 $S wipe --target ci --confirm > /dev/null
           python3 $S posture --target ci2 --vantage vm --alias ci-agent2 > /dev/null
           python3 $S vantage check --target ci2 > /dev/null 2>&1 && exit 1 || test $? -eq 1
+          mkdir -p "$HOME/.redteam/campaigns/ci2"
+          printf 'leak by jewboy420 <jewboy420@x.com>\nAKIAIOSFODNN7EXAMPLE\n/home/jewboy420/work\n' > "$HOME/.redteam/campaigns/ci2/notes.md"
+          python3 $S leakscan --target ci2 | grep -q 'HIGH'
+          python3 $S leakscan --target ci2 | grep -q 'aws-key'
+          python3 $S timeline --target ci2 --burst 60 --pause 0.2 | grep -q 'wall-clock'
+          python3 $S trail --target ci2 --add "opencode-zen :: engagement inference" | grep -q 'opencode-zen'
+          python3 $S trail --target ci2 --add "gmail :: personal checks" | grep -q 'HIGH: personal use'
+          python3 $S alias --target ci2 | grep -q 'ghost-'
+          python3 $S alias --target ci2 --rotate | grep -q 'epoch 1'
+          python3 $S check --target ci2 | grep -q 'alias'
           test -f templates/posture.json
           test -f references/protection-playbook.md
 
