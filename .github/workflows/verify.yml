@@ -1,0 +1,37 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile
+        run: python3 -m py_compile scripts/barbican.py scripts/safehouse.py
+
+      - name: CLI smoke tests
+        run: |
+          set -e
+          S=scripts/barbican.py
+          python3 $S --help > /dev/null
+          python3 $S verify | grep -q 'ALL PASS'
+          for c in assess posture sanitize check wipe vantage verify; do
+            python3 $S --help | grep -q "$c"
+          done
+          python3 $S posture --target ci --vantage lab --alias ci-agent > /dev/null
+          test -f "$HOME/.redteam/opsec/ci/posture.json"
+          python3 $S sanitize --target ci > /dev/null
+          python3 $S wipe --target ci --confirm > /dev/null
+          python3 $S posture --target ci2 --vantage vm --alias ci-agent2 > /dev/null
+          python3 $S vantage check --target ci2 > /dev/null 2>&1 && exit 1 || test $? -eq 1
+          test -f templates/posture.json
+          test -f references/protection-playbook.md
+
+      - name: Stdlib-only check
+        run: |
+          ! grep -E '^[[:space:]]*(import|from)[[:space:]]+(requests|flask|httpx|aiohttp|urllib3)' scripts/barbican.py

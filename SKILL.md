@@ -32,7 +32,7 @@ residential vantage, no personal trails.
    └───────────────────────────┬───────────────────────────────┘
                                ↓ posture gates the engagement
    HolyShit (finder) · 3AM (performer) · UNDERCROFT (descent) ·
-   KAIRO (synthesizer) · SHIKI (command, parked)
+   KAIRO (synthesizer) · SHUKAKU (harvester) · SHIKI (command, parked)
 ```
 
 ## When to Use
@@ -116,7 +116,7 @@ State: `~/.redteam/opsec/<target>/posture.json`.
 
 ## Relations
 
-- `spydermonkey` — THE DISPATCHER (v1.0.0): the family's front door — any agent loads it first, states the goal, and the router sends the right mandate(s); `spydermonkey run` = the full pipeline, `spydermonkey verify` checks all six engines. The web's center.
+- `spydermonkey` — THE DISPATCHER (v1.2.0): the family's front door — any agent loads it first, states the goal, and the router sends the right mandate(s); `spydermonkey run` = the full pipeline, `spydermonkey verify` checks all seven engines. The web's center.
 
 
 - `holyshit-mode` — the finder: consumes BARBICAN's posture (engagement-vantage
@@ -126,5 +126,5 @@ State: `~/.redteam/opsec/<target>/posture.json`.
 - `kairo` — the synthesizer: compiled attacks ship only after BARBICAN posture.
 - `shiki` — parked command layer; BARBICAN gates it like everything else.
 - Tree: BARBICAN (first layer) → HolyShit (finder) · 3AM (performer) ·
-  UNDERCROFT (descent) · KAIRO (synthesizer) · SHIKI (command). All offensive;
-  the first layer protects the operator.
+  UNDERCROFT (descent) · KAIRO (synthesizer) · SHUKAKU (harvester) · SHIKI (command).
+  All offensive; the first layer protects the operator.
