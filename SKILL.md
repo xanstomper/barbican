@@ -116,6 +116,9 @@ State: `~/.redteam/opsec/<target>/posture.json`.
 
 ## Relations
 
+- `spydermonkey` — THE DISPATCHER (v1.0.0): the family's front door — any agent loads it first, states the goal, and the router sends the right mandate(s); `spydermonkey run` = the full pipeline, `spydermonkey verify` checks all six engines. The web's center.
+
+
 - `holyshit-mode` — the finder: consumes BARBICAN's posture (engagement-vantage
   policy is BARBICAN-enforced); its zero-document gate is BARBICAN canon.
 - `3am-shinjitsu` — the performer: sweep pacing inherits BARBICAN's timeline layer.
