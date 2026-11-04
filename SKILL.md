@@ -1,7 +1,7 @@
 ---
-name: safehouse
-description: "Trigger `safehouse`. THE FIRST LAYER — synthesizes the operator's protection: vantage, identity, artifacts, trail, timeline, cleanup. Runs before every engagement."
-version: 1.0.0
+name: barbican
+description: "Trigger `barbican`. THE FIRST LAYER — synthesizes the operator's protection: vantage, identity, artifacts, trail, timeline, cleanup. Runs before every engagement."
+version: 1.1.0
 author: Hermes Agent
 license: MIT
 platforms: [linux]
@@ -11,14 +11,14 @@ metadata:
     related_skills: [holyshit-mode, 3am-shinjitsu, undercroft, kairo]
 ---
 
-# SAFEHOUSE — The Operator-Protection Synthesizer
+# BARBICAN — The Operator-Protection Synthesizer
 
-The first layer of the family. Everything below it attacks; SAFEHOUSE protects the
+The first layer of the family. Everything below it attacks; BARBICAN protects the
 one holding the gun. It **synthesizes the opsec posture** for each engagement the
 way KAIRO synthesizes attacks: audit the operator's exposure, classify the risks,
 compile the protection plan, and enforce it at engagement start and end.
 
-The zero-document gate (family canon) is SAFEHOUSE doctrine made rule: the
+The zero-document gate (family canon) is BARBICAN doctrine made rule: the
 operator's identity never enters family artifacts — no names, no hosts, no
 residential vantage, no personal trails.
 
@@ -26,7 +26,7 @@ residential vantage, no personal trails.
 
 ```
    ┌───────────────────────────────────────────────────────────┐
-   │  SAFEHOUSE (SHIELD — FIRST LAYER)                         │
+   │  BARBICAN (SHIELD — FIRST LAYER)                         │
    │  synthesizes vantage · identity · artifacts · trail ·     │
    │  timeline · cleanup — protects the operator, always       │
    └───────────────────────────┬───────────────────────────────┘
@@ -37,25 +37,38 @@ residential vantage, no personal trails.
 
 ## When to Use
 
-Trigger `safehouse` FIRST — before any family mandate runs — and again at
+Trigger `barbican` FIRST — before any family mandate runs — and again at
 engagement end. Any time the operator's exposure might have changed: new vantage,
 new repo, new artifact, new provider.
 
 ## Activation
 
 ```text
-▸ SAFEHOUSE — FIRST LAYER ONLINE
+▸ BARBICAN — FIRST LAYER ONLINE
   ═══════════════════════════════════
   [ OK ] exposure audit ready
   [ OK ] posture synthesizer loaded
   [ OK ] sanitizer armed
-  ⚡ SAFEHOUSE ARMED · STATUS: SHIELDING
+  ⚡ BARBICAN ARMED · STATUS: SHIELDING
   ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁
   ─ waiting P0: engagement target · authorization
 ```
 
-**P0 (clarify, zero documents):** engagement target · authorization. SAFEHOUSE
+**P0 (clarify, zero documents):** engagement target · authorization. BARBICAN
 never asks for the operator's real identity — identifying it is its JOB.
+
+## The Vantage Engine (v1.1.0 — the exit, verified)
+
+`barbican vantage check [--target T]` — the hard gate, verified live:
+- **exit-IP echo** (api.ipify/ifconfig): what targets actually see as your origin —
+  your residential IP showing here IS the finding
+- **VM inventory** (libvirt/virsh): `vantage vm [--name X]` lists/starts VMs —
+  use VMs when possible
+- **VPN inventory** (wireguard/nmcli/tailscale): `vantage vpn [--name X]` lists/raises
+  VPNs — if the operator wants one
+- **DNS resolver flag**: system resolver in use = engagement DNS leaks
+- **HARD GATE**: posture demanding `vm`/`vpn` fails LOUD (rc=1, "ENGAGEMENT GATE
+  CLOSED") when the required vantage isn't live. No verified exit, no engagement.
 
 ## The Six Protection Layers (the synthesis contract)
 
@@ -83,12 +96,13 @@ never asks for the operator's real identity — identifying it is its JOB.
 
 ## Tooling
 
-`scripts/safehouse.py` — stdlib CLI:
+`scripts/barbican.py` — stdlib CLI:
 - `assess --target <t>` — live exposure audit: default-route vantage, git identity, hostname leaks in family artifacts, env markers, compartment check → ranked risks
 - `posture --target <t> --vantage vm|vps|vpn|lab --alias <engagement-alias>` — synthesize + store the engagement posture (required before the family runs; prints the gate)
 - `sanitize --target <t> [--write]` — strip operator-identifying strings (username, hostname, git identity) from ALL family artifacts in the campaign + canon (dry-run default; --write applies with the alias from posture)
 - `check` — fast pre-flight: vantage + identity + compartment in one line each
 - `wipe --target <t> --confirm` — engagement-end cleanup: campaign dir + sim rows (canon survives)
+- `vantage check|vm|vpn [--target T] [--name X]` — exit verification + VM/VPN inventory/launch + hard gate
 - `verify` — self-check
 
 State: `~/.redteam/opsec/<target>/posture.json`.
@@ -97,17 +111,17 @@ State: `~/.redteam/opsec/<target>/posture.json`.
 
 - `SKILL.md` — this doctrine
 - `references/protection-playbook.md` — the six layers' audit + synthesis details
-- `scripts/safehouse.py` — assess/posture/sanitize/check/wipe/verify CLI
+- `scripts/barbican.py` — assess/posture/sanitize/check/wipe/verify CLI
 - `templates/posture.json` — posture state starter
 
 ## Relations
 
-- `holyshit-mode` — the finder: consumes SAFEHOUSE's posture (engagement-vantage
-  policy is SAFEHOUSE-enforced); its zero-document gate is SAFEHOUSE canon.
-- `3am-shinjitsu` — the performer: sweep pacing inherits SAFEHOUSE's timeline layer.
-- `undercroft` — the descent: its run/report artifacts pass SAFEHOUSE sanitize.
-- `kairo` — the synthesizer: compiled attacks ship only after SAFEHOUSE posture.
-- `shiki` — parked command layer; SAFEHOUSE gates it like everything else.
-- Tree: SAFEHOUSE (first layer) → HolyShit (finder) · 3AM (performer) ·
+- `holyshit-mode` — the finder: consumes BARBICAN's posture (engagement-vantage
+  policy is BARBICAN-enforced); its zero-document gate is BARBICAN canon.
+- `3am-shinjitsu` — the performer: sweep pacing inherits BARBICAN's timeline layer.
+- `undercroft` — the descent: its run/report artifacts pass BARBICAN sanitize.
+- `kairo` — the synthesizer: compiled attacks ship only after BARBICAN posture.
+- `shiki` — parked command layer; BARBICAN gates it like everything else.
+- Tree: BARBICAN (first layer) → HolyShit (finder) · 3AM (performer) ·
   UNDERCROFT (descent) · KAIRO (synthesizer) · SHIKI (command). All offensive;
   the first layer protects the operator.

@@ -1,4 +1,4 @@
-# SAFEHOUSE — Protection Playbook (the six layers, audit + synthesis detail)
+# BARBICAN — Protection Playbook (the six layers, audit + synthesis detail)
 
 The first layer's contract: the operator's identity never enters family artifacts,
 the engagement's traffic never originates from the operator's life, and everything
