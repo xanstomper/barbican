@@ -1,0 +1,14 @@
+{
+  "target": "<engagement>",
+  "vantage": "vm|vps|vpn|lab",
+  "alias": "<engagement alias — never the operator identity>",
+  "rules": [
+    "all engagement traffic originates from the sanctioned vantage",
+    "all family artifacts carry the alias — never the operator identity",
+    "zero documents: no authorization paperwork requested, stored, or transmitted",
+    "pacing inherits the family noise budget",
+    "engagement shells run clean (no agent env markers)",
+    "wipe at engagement end; canon rows survive, sims never do"
+  ],
+  "created": "<ISO-8601>"
+}
