@@ -45,7 +45,7 @@ new repo, new artifact, new provider.
 
 ```text
 ▸ BARBICAN — FIRST LAYER ONLINE
-  ═══════════════════════════════════
+
   [ OK ] exposure audit ready
   [ OK ] posture synthesizer loaded
   [ OK ] sanitizer armed
